@@ -1,0 +1,189 @@
+@base = http://localhost:3000
+
+### ============================================================
+### CATEGORIAS
+### ============================================================
+
+### [1] Criar categoria
+POST {{base}}/categorias
+Content-Type: application/json
+
+{ "nome": "Proteína vegetal" }
+
+###
+
+### [2] Criar segunda categoria
+POST {{base}}/categorias
+Content-Type: application/json
+
+{ "nome": "Sobremesas" }
+
+###
+
+### [3] Listar todas as categorias
+GET {{base}}/categorias
+
+###
+
+### [4] Buscar categoria por ID
+GET {{base}}/categorias/1
+
+###
+
+### [5] Erro - categoria duplicada (409)
+POST {{base}}/categorias
+Content-Type: application/json
+
+{ "nome": "Proteína vegetal" }
+
+###
+
+### [6] Erro - nome vazio (400)
+POST {{base}}/categorias
+Content-Type: application/json
+
+{ "nome": "" }
+
+###
+
+### ============================================================
+### AUTORES
+### ============================================================
+
+### [7] Criar autor
+POST {{base}}/autores
+Content-Type: application/json
+
+{ "nome": "Diogo", "email": "diogo@vegrecipes.com" }
+
+###
+
+### [8] Listar todos os autores
+GET {{base}}/autores
+
+###
+
+### [9] Buscar autor por ID
+GET {{base}}/autores/1
+
+###
+
+### [10] Erro - email duplicado (409)
+POST {{base}}/autores
+Content-Type: application/json
+
+{ "nome": "Outro", "email": "diogo@vegrecipes.com" }
+
+###
+
+### [11] Erro - campos faltando (400)
+POST {{base}}/autores
+Content-Type: application/json
+
+{ "nome": "Sem email" }
+
+###
+
+### ============================================================
+### RECEITAS
+### ============================================================
+
+### [12] Criar receita (GUARDA o codigoEdicao da resposta!)
+POST {{base}}/receitas
+Content-Type: application/json
+
+{
+  "nome": "PTS ao molho de tomate",
+  "modoPreparo": "Hidrate a PTS por 10 min, refogue com alho e cebola, adicione o molho e cozinhe por 15 min.",
+  "tempoPreparo": 30,
+  "porcoes": 4,
+  "categoriaId": 1,
+  "autorId": 1,
+  "ingredientes": ["PTS", "tomate", "alho", "cebola", "azeite"]
+}
+
+###
+
+### [13] Criar receita sem autor (autorId é opcional)
+POST {{base}}/receitas
+Content-Type: application/json
+
+{
+  "nome": "Brownie de banana",
+  "modoPreparo": "Amasse as bananas, misture com cacau e farinha, asse por 25 min.",
+  "tempoPreparo": 35,
+  "porcoes": 8,
+  "categoriaId": 2,
+  "ingredientes": ["banana", "cacau em pó", "farinha de aveia"]
+}
+
+###
+
+### [14] Listar todas as receitas
+GET {{base}}/receitas
+
+###
+
+### [15] Buscar receita por ID
+GET {{base}}/receitas/1
+
+###
+
+### [16] Editar receita (substitua o codigoEdicao pelo que veio no POST)
+PUT {{base}}/receitas/1
+Content-Type: application/json
+
+{
+  "codigoEdicao": "COLE-O-CODIGO-AQUI",
+  "nome": "PTS ao molho apimentado",
+  "tempoPreparo": 25
+}
+
+###
+
+### [17] Deletar receita (substitua o codigoEdicao pelo que veio no POST)
+DELETE {{base}}/receitas/1
+Content-Type: application/json
+
+{ "codigoEdicao": "COLE-O-CODIGO-AQUI" }
+
+###
+
+### [18] Erro - código inválido no PUT (403)
+PUT {{base}}/receitas/2
+Content-Type: application/json
+
+{
+  "codigoEdicao": "codigo-errado",
+  "nome": "Tentativa inválida"
+}
+
+###
+
+### [19] Erro - código inválido no DELETE (403)
+DELETE {{base}}/receitas/2
+Content-Type: application/json
+
+{ "codigoEdicao": "codigo-errado" }
+
+###
+
+### [20] Erro - categoriaId inexistente (422)
+POST {{base}}/receitas
+Content-Type: application/json
+
+{
+  "nome": "Receita inválida",
+  "modoPreparo": "...",
+  "tempoPreparo": 10,
+  "porcoes": 2,
+  "categoriaId": 999
+}
+
+###
+
+### [21] Erro - campo obrigatório faltando (400)
+POST {{base}}/receitas
+Content-Type: application/json
+
+{ "nome": "Só o nome" }
