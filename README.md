@@ -12,12 +12,12 @@ Sistema web para registro e consulta de receitas vegetarianas. O usuário pode c
 
 ## Tecnologias Utilizadas
 
-| Camada        | Tecnologia                      |
-| ------------- | ------------------------------- |
-| Frontend      | HTML5 + CSS3 + Bootstrap 5      |
-| Backend       | Node.js + Express.js            |
-| Persistência  | In-memory (futuramente MongoDB) |
-| Versionamento | Git + GitHub                    |
+| Camada        | Tecnologia                              |
+| ------------- | --------------------------------------- |
+| Frontend      | HTML5 + CSS3 + Bootstrap 5 + Vanilla.js |
+| Backend       | Node.js + Express.js                    |
+| Persistência  | In-memory (futuramente MongoDB)         |
+| Versionamento | Git + GitHub                            |
 
 ---
 
@@ -39,7 +39,7 @@ npm start
 ## Estrutura de Pastas
 
 ```
-receitas-api/
+backend/
 ├── assets/                             # prints com requisições e lista de requisições no arquivo .http
 ├── src/
 │   ├── app.js                          # setup + middleware + rotas
@@ -65,6 +65,27 @@ receitas-api/
 │       └── errorHandler.js
 ├── package.json
 └── .gitignore
+```
+
+```
+
+frontend/
+├── index.html                  ← SPA com 3 abas (Bootstrap 5)
+├── css/
+│   └── style.css               ← Design orgânico/natural
+└── js/
+    ├── api.js                  ← Camada HTTP (trata 204 sem corpo)
+    ├── state.js                ← Estado global compartilhado
+    ├── main.js                 ← Orquestrador (init + eventos)
+    ├── services/
+    │   ├── categoriaService.js ← Validação + chamadas de Categoria
+    │   ├── autorService.js     ← Validação + chamadas de Autor
+    │   └── receitaService.js   ← Validação + chamadas de Receita
+    └── ui/
+        ├── categoriaView.js    ← Render + form + delete
+        ├── autorView.js        ← Render + form + delete
+        ├── receitaView.js      ← Render + form + delete + editar nome
+        └── toast.js            ← Notificações visuais
 ```
 
 **Regra de ouro (SOLID na prática):**
