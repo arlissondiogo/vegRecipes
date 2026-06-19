@@ -3,8 +3,19 @@ import { categoriaModel } from "../models/categoria.js";
 import { autorModel } from "../models/autor.js";
 
 export const receitaService = {
-  listarTodas() {
-    return receitaModel.listarTodas();
+  listarTodas(filtros) {
+    const total = receitaModel.contarTodas(filtros);
+    const dados = receitaModel.listarTodas(filtros);
+
+    return {
+      dados,
+      paginacao: {
+        total,
+        limit: filtros.limit || 10,
+        offset: filtros.offset || 0,
+        paginas: Math.ceil(total / (filtros.limit || 10)),
+      },
+    };
   },
 
   buscarPorId(id) {
@@ -17,10 +28,38 @@ export const receitaService = {
     return receita;
   },
 
-  criar({ nome, modoPreparo, tempoPreparo, porcoes, categoriaId, autorId, ingredientes }) {
-    if (!nome || !modoPreparo || !tempoPreparo || !porcoes || !categoriaId) {
+  getEstatisticas() {
+    return receitaModel.getEstatisticas();
+  },
+
+  criar({
+    nome,
+    modoPreparo,
+    tempoPreparo,
+    porcoes,
+    categoriaId,
+    autorId,
+    autorToken,
+    ingredientes,
+  }) {
+    if (
+      !nome ||
+      !modoPreparo ||
+      !tempoPreparo ||
+      !porcoes ||
+      !categoriaId ||
+      !autorId
+    ) {
       const err = new Error(
-        'Campos "nome", "modoPreparo", "tempoPreparo", "porcoes" e "categoriaId" são obrigatórios',
+        'Campos "nome", "modoPreparo", "tempoPreparo", "porcoes", "categoriaId" e "autorId" são obrigatórios',
+      );
+      err.status = 400;
+      throw err;
+    }
+
+    if (!autorToken) {
+      const err = new Error(
+        "Token do autor é obrigatório para cadastrar uma receita em seu nome",
       );
       err.status = 400;
       throw err;
@@ -32,26 +71,66 @@ export const receitaService = {
       throw err;
     }
 
-    if (autorId && !autorModel.buscarPorId(Number(autorId))) {
+    if (!autorModel.buscarPorId(Number(autorId))) {
       const err = new Error("Autor informado não existe");
       err.status = 422;
       throw err;
     }
 
-    return receitaModel.inserir({ nome, modoPreparo, tempoPreparo, porcoes, categoriaId, autorId, ingredientes });
-  },
-
-  atualizar(id, codigoEdicao, dados) {
-    if (!codigoEdicao) {
-      const err = new Error("Código de edição é obrigatório");
-      err.status = 400;
-      throw err;
-    }
-    if (!receitaModel.validarCodigo(id, codigoEdicao)) {
-      const err = new Error("Código de edição inválido");
+    if (!autorModel.validarToken(Number(autorId), autorToken)) {
+      const err = new Error(
+        "Token do autor inválido: não é possível cadastrar receita em nome de outra pessoa",
+      );
       err.status = 403;
       throw err;
     }
+
+    if (Number(tempoPreparo) <= 0) {
+      const err = new Error("O tempo de preparo deve ser maior que zero");
+      err.status = 400;
+      throw err;
+    }
+
+    if (Number(porcoes) <= 0) {
+      const err = new Error("O número de porções deve ser maior que zero");
+      err.status = 400;
+      throw err;
+    }
+
+    return receitaModel.inserir({
+      nome,
+      modoPreparo,
+      tempoPreparo,
+      porcoes,
+      categoriaId,
+      autorId,
+      ingredientes,
+    });
+  },
+
+  atualizar(id, autorToken, dados) {
+    if (!autorToken) {
+      const err = new Error("Token do autor é obrigatório");
+      err.status = 400;
+      throw err;
+    }
+    if (!receitaModel.validarAutoria(id, autorToken)) {
+      const err = new Error("Token inválido: você não é o autor desta receita");
+      err.status = 403;
+      throw err;
+    }
+
+    if (
+      dados.categoriaId &&
+      !categoriaModel.buscarPorId(Number(dados.categoriaId))
+    ) {
+      const err = new Error("Categoria informada não existe");
+      err.status = 422;
+      throw err;
+    }
+
+    delete dados.autorId;
+
     const atualizada = receitaModel.atualizar(id, dados);
     if (!atualizada) {
       const err = new Error("Receita não encontrada");
@@ -61,14 +140,14 @@ export const receitaService = {
     return atualizada;
   },
 
-  remover(id, codigoEdicao) {
-    if (!codigoEdicao) {
-      const err = new Error("Código de edição é obrigatório");
+  remover(id, autorToken) {
+    if (!autorToken) {
+      const err = new Error("Token do autor é obrigatório");
       err.status = 400;
       throw err;
     }
-    if (!receitaModel.validarCodigo(id, codigoEdicao)) {
-      const err = new Error("Código de edição inválido");
+    if (!receitaModel.validarAutoria(id, autorToken)) {
+      const err = new Error("Token inválido: você não é o autor desta receita");
       err.status = 403;
       throw err;
     }

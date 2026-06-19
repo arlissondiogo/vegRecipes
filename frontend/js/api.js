@@ -16,7 +16,8 @@ async function request(method, path, body = null) {
   const data = await res.json();
 
   if (!res.ok) {
-    const msg = data?.erro || data?.message || `Erro ${res.status}`;
+    const msg =
+      data?.error || data?.erro || data?.message || `Erro ${res.status}`;
     throw new Error(msg);
   }
 

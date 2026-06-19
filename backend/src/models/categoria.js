@@ -1,35 +1,43 @@
-let categorias = [];
-let nextId = 1;
+import { db } from '../db.js';
+
+function paraApi(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    nome: row.nome,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
+  };
+}
 
 export const categoriaModel = {
   listarTodas() {
-    return categorias;
+    return db.prepare('SELECT * FROM categorias ORDER BY nome ASC').all().map(paraApi);
   },
 
   buscarPorId(id) {
-    return categorias.find((c) => c.id === id) || null;
+    const row = db.prepare('SELECT * FROM categorias WHERE id = ?').get(Number(id));
+    return paraApi(row);
   },
 
   existeNome(nome) {
-    return categorias.some((c) => c.nome.toLowerCase() === nome.toLowerCase());
+    const row = db.prepare('SELECT 1 FROM categorias WHERE LOWER(nome) = LOWER(?)').get(nome);
+    return row !== undefined;
   },
 
   inserir({ nome }) {
-    const nova = { id: nextId++, nome };
-    categorias.push(nova);
-    return nova;
+    const r = db.prepare('INSERT INTO categorias (nome) VALUES (?)').run(nome);
+    return this.buscarPorId(r.lastInsertRowid);
   },
 
-  atualizar(id, dados) {
-    const idx = categorias.findIndex((c) => c.id === id);
-    if (idx === -1) return null;
-    categorias[idx] = { ...categorias[idx], ...dados, id };
-    return categorias[idx];
+  atualizar(id, { nome }) {
+    db.prepare('UPDATE categorias SET nome = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
+      .run(nome, Number(id));
+    return this.buscarPorId(id);
   },
 
   remover(id) {
-    const tamanhoAntes = categorias.length;
-    categorias = categorias.filter((c) => c.id !== id);
-    return categorias.length < tamanhoAntes;
-  },
+    const r = db.prepare('DELETE FROM categorias WHERE id = ?').run(Number(id));
+    return r.changes > 0;
+  }
 };
