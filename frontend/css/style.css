@@ -1,0 +1,414 @@
+@import url("https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap");
+
+:root {
+  --green-dark: #2d4a2d;
+  --green-mid: #4a7c4a;
+  --green-light: #7aad6e;
+  --cream: #f7f3ec;
+  --cream-2: #ede8de;
+  --brown: #8b6343;
+  --brown-light: #c9a87a;
+  --text-main: #2a2318;
+  --text-muted: #7a7065;
+  --red: #c0392b;
+  --white: #ffffff;
+  --shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  --radius: 10px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: "DM Sans", sans-serif;
+  background: var(--cream);
+  color: var(--text-main);
+  min-height: 100vh;
+}
+
+.site-header {
+  background: var(--green-dark);
+  color: var(--cream);
+  padding: 1.5rem 0 1.2rem;
+  border-bottom: 4px solid var(--green-light);
+}
+.site-header h1 {
+  font-family: "Lora", serif;
+  font-size: 2rem;
+  font-weight: 600;
+  letter-spacing: -0.5px;
+}
+.site-header .subtitle {
+  font-size: 0.85rem;
+  color: var(--brown-light);
+  font-style: italic;
+}
+
+.nav-tabs {
+  border-bottom: 2px solid var(--cream-2);
+  gap: 0.25rem;
+  flex-wrap: nowrap;
+}
+.nav-tabs .nav-link {
+  font-family: "DM Sans", sans-serif;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  border: none;
+  border-radius: var(--radius) var(--radius) 0 0;
+  padding: 0.6rem 1.2rem;
+  transition:
+    background 0.2s,
+    color 0.2s;
+}
+.nav-tabs .nav-link:hover {
+  background: var(--cream-2);
+  color: var(--green-dark);
+}
+.nav-tabs .nav-link.active {
+  background: var(--white);
+  color: var(--green-dark);
+  font-weight: 600;
+  border-bottom: 3px solid var(--green-light);
+}
+
+.section-card {
+  background: var(--white);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  box-shadow: var(--shadow);
+  margin-bottom: 1.5rem;
+}
+.section-title {
+  font-family: "Lora", serif;
+  font-size: 1.1rem;
+  color: var(--green-dark);
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.form-label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.3rem;
+}
+.form-control,
+.form-select {
+  font-family: "DM Sans", sans-serif;
+  font-size: 0.9rem;
+  background: var(--cream);
+  border: 1.5px solid var(--cream-2);
+  border-radius: 7px;
+  color: var(--text-main);
+  transition: border-color 0.2s;
+}
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--green-light);
+  background: var(--white);
+  box-shadow: 0 0 0 3px rgba(122, 173, 110, 0.15);
+  outline: none;
+}
+textarea.form-control {
+  resize: vertical;
+  min-height: 90px;
+}
+
+.btn-primary-veg {
+  background: var(--green-dark);
+  color: var(--cream);
+  border: none;
+  border-radius: 7px;
+  padding: 0.5rem 1.4rem;
+  font-family: "DM Sans", sans-serif;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    transform 0.1s;
+}
+.btn-primary-veg:hover {
+  background: var(--green-mid);
+}
+.btn-primary-veg:active {
+  transform: scale(0.97);
+}
+
+.btn-secondary-veg {
+  background: var(--cream-2);
+  color: var(--green-dark);
+  border: 1.5px solid var(--cream-2);
+  border-radius: 7px;
+  padding: 0.45rem 1rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.btn-secondary-veg:hover {
+  background: var(--green-light);
+  color: var(--white);
+  border-color: var(--green-light);
+}
+
+.btn-del {
+  background: transparent;
+  border: none;
+  color: var(--red);
+  cursor: pointer;
+  padding: 0.2rem 0.4rem;
+  border-radius: 5px;
+  opacity: 0.7;
+  transition:
+    opacity 0.2s,
+    background 0.2s;
+}
+.btn-del:hover {
+  opacity: 1;
+  background: #fdecea;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+thead th {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  padding: 0.5rem 0.75rem;
+  border-bottom: 2px solid var(--cream-2);
+  text-align: left;
+}
+tbody tr {
+  transition: background 0.15s;
+}
+tbody tr:hover {
+  background: var(--cream);
+}
+tbody td {
+  padding: 0.55rem 0.75rem;
+  border-bottom: 1px solid var(--cream-2);
+  vertical-align: middle;
+}
+
+.badge-cat {
+  background: var(--green-light);
+  color: var(--white);
+  font-size: 0.7rem;
+  font-weight: 500;
+  padding: 0.15rem 0.6rem;
+  border-radius: 20px;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.receita-card {
+  background: var(--white);
+  border: 1.5px solid var(--cream-2);
+  border-radius: var(--radius);
+  padding: 1.1rem 1.25rem;
+  margin-bottom: 0.85rem;
+  transition: box-shadow 0.2s;
+}
+.receita-card:hover {
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.1);
+}
+.receita-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.5rem;
+}
+.receita-nome {
+  font-family: "Lora", serif;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--green-dark);
+}
+.receita-meta {
+  display: flex;
+  gap: 0.75rem;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+.receita-modo {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  margin-bottom: 0.6rem;
+  line-height: 1.5;
+}
+.ingredientes-list {
+  font-size: 0.8rem;
+  color: var(--brown);
+  padding-left: 1.2rem;
+  margin-bottom: 0.6rem;
+}
+.ingredientes-list li {
+  margin-bottom: 0.15rem;
+}
+.receita-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.btn-action {
+  font-size: 0.78rem;
+  padding: 0.3rem 0.8rem;
+  border-radius: 6px;
+  border: 1.5px solid transparent;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-edit {
+  background: var(--cream-2);
+  color: var(--green-dark);
+  border-color: var(--cream-2);
+}
+.btn-edit:hover {
+  background: var(--green-light);
+  color: var(--white);
+}
+.btn-del-receita {
+  background: #fdecea;
+  color: var(--red);
+  border-color: #fdecea;
+}
+.btn-del-receita:hover {
+  background: var(--red);
+  color: var(--white);
+}
+.btn-unlock {
+  background: var(--brown-light);
+  color: var(--white);
+  border-color: var(--brown-light);
+}
+.btn-unlock:hover {
+  background: var(--brown);
+}
+.codigo-input-row {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+.codigo-input-row .form-control {
+  max-width: 220px;
+}
+
+.ing-row {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  margin-bottom: 0.6rem;
+}
+.ing-row .form-control {
+  flex: 1;
+  min-width: 80px;
+}
+#ing-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+}
+.ing-tag {
+  background: var(--cream-2);
+  color: var(--text-main);
+  font-size: 0.78rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+.ing-remove {
+  background: none;
+  border: none;
+  color: var(--red);
+  cursor: pointer;
+  font-size: 0.9rem;
+  line-height: 1;
+  padding: 0;
+}
+
+#toast-container {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.toast-msg {
+  padding: 0.7rem 1.2rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  transform: translateX(120%);
+  opacity: 0;
+  transition:
+    transform 0.35s ease,
+    opacity 0.35s ease;
+  max-width: 320px;
+}
+.toast-msg.show {
+  transform: translateX(0);
+  opacity: 1;
+}
+.toast-success {
+  background: var(--green-dark);
+  color: var(--cream);
+}
+.toast-error {
+  background: var(--red);
+  color: var(--white);
+}
+
+@media (max-width: 576px) {
+  .receita-header {
+    flex-direction: column;
+  }
+  .receita-meta {
+    flex-wrap: wrap;
+  }
+  .ing-row {
+    flex-direction: column;
+  }
+}
+
+.btn-copy {
+  background: #f59e0b;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+.btn-copy:hover {
+  background: #d97706;
+}
+.btn-copy.copiado {
+  background: #16a34a;
+}
