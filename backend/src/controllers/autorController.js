@@ -1,28 +1,54 @@
 import { autorService } from "../services/autorService.js";
 
 export const autorController = {
-  listarTodos(req, res) {
-    const autores = autorService.listarTodos();
-    res.json(autores);
+  async listarTodos(req, res, next) {
+    try {
+      const autores = autorService.listarTodos();
+      res.json(autores);
+    } catch (e) {
+      next(e);
+    }
   },
 
-  buscarPorId(req, res) {
-    const autor = autorService.buscarPorId(Number(req.params.id));
-    res.json(autor);
+  async buscarPorId(req, res, next) {
+    try {
+      const autor = autorService.buscarPorId(Number(req.params.id));
+      res.json(autor);
+    } catch (e) {
+      next(e);
+    }
   },
 
-  criar(req, res) {
-    const novo = autorService.criar(req.body);
-    res.status(201).json(novo);
+  async criar(req, res, next) {
+    try {
+      const novo = autorService.criar(req.body);
+      res.status(201).json(novo);
+    } catch (e) {
+      next(e);
+    }
   },
 
-  atualizar(req, res) {
-    const atualizado = autorService.atualizar(Number(req.params.id), req.body);
-    res.json(atualizado);
+  async atualizar(req, res, next) {
+    try {
+      const { token, ...dados } = req.body;
+      const atualizado = autorService.atualizar(
+        Number(req.params.id),
+        token,
+        dados,
+      );
+      res.json(atualizado);
+    } catch (e) {
+      next(e);
+    }
   },
 
-  remover(req, res) {
-    autorService.remover(Number(req.params.id));
-    res.status(204).end();
+  async remover(req, res, next) {
+    try {
+      const { token } = req.body;
+      autorService.remover(Number(req.params.id), token);
+      res.status(204).end();
+    } catch (e) {
+      next(e);
+    }
   },
 };

@@ -4,6 +4,7 @@ import { receitaController } from "../controllers/receitaController.js";
 const router = Router();
 
 router.get("/", receitaController.listarTodas);
+router.get("/estatisticas", receitaController.getEstatisticas);
 router.get("/:id", receitaController.buscarPorId);
 router.post("/", receitaController.criar);
 router.put("/:id", receitaController.atualizar);

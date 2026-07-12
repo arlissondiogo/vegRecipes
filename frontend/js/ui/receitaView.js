@@ -2,8 +2,6 @@ import { state } from "../state.js";
 import { receitaService } from "../services/receitaService.js";
 import { showToast } from "./toast.js";
 
-const codigos = {};
-
 function getNomeCategoria(id) {
   const c = state.categorias.find((c) => c.id === Number(id));
   return c ? c.nome : `#${id}`;
@@ -27,7 +25,6 @@ export const receitaView = {
     }
 
     state.receitas.forEach((r) => {
-      const temCodigo = !!codigos[r.id];
       const card = document.createElement("div");
       card.className = "receita-card";
       card.dataset.id = r.id;
@@ -46,35 +43,14 @@ export const receitaView = {
         <p class="receita-modo">${r.modoPreparo}</p>
         ${
           r.ingredientes && r.ingredientes.length > 0
-            ? `<ul class="ingredientes-list">${r.ingredientes.map((i) => `<li>${i.quantidade} ${i.unidade} de ${i.nome}</li>`).join("")}</ul>`
+            ? `<ul class="ingredientes-list">${r.ingredientes.map((i) => `<li>${i}</li>`).join("")}</ul>`
             : ""
         }
         <div class="receita-actions">
-          ${
-            temCodigo
-              ? `<button class="btn-action btn-edit" data-id="${r.id}" title="Editar nome">✏ Editar nome</button>
-                 <button class="btn-action btn-del-receita" data-id="${r.id}" title="Remover">🗑 Remover</button>`
-              : `<div class="codigo-input-row">
-                   <input type="text" class="form-control form-control-sm codigo-field" placeholder="Código de edição…" data-id="${r.id}">
-                   <button class="btn-action btn-unlock" data-id="${r.id}">Desbloquear</button>
-                 </div>`
-          }
+          <button class="btn-action btn-edit" data-id="${r.id}" title="Editar nome">✏ Editar nome</button>
+          <button class="btn-action btn-del-receita" data-id="${r.id}" title="Remover">🗑 Remover</button>
         </div>`;
       container.appendChild(card);
-    });
-
-    container.querySelectorAll(".btn-unlock").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const id = Number(btn.dataset.id);
-        const input = container.querySelector(`.codigo-field[data-id="${id}"]`);
-        const codigo = input?.value?.trim();
-        if (!codigo) {
-          showToast("Digite o código de edição.", "error");
-          return;
-        }
-        codigos[id] = codigo;
-        receitaView.render();
-      });
     });
 
     container.querySelectorAll(".btn-edit").forEach((btn) => {
@@ -83,8 +59,15 @@ export const receitaView = {
         const receita = state.receitas.find((r) => r.id === id);
         const novoNome = prompt("Novo nome da receita:", receita?.nome || "");
         if (!novoNome || !novoNome.trim()) return;
+        const autorToken = prompt(
+          "Digite o token do autor desta receita para confirmar a edição:",
+        );
+        if (!autorToken || !autorToken.trim()) {
+          showToast("Edição cancelada: token não informado.", "error");
+          return;
+        }
         try {
-          const atualizada = await receitaService.atualizar(id, codigos[id], {
+          const atualizada = await receitaService.atualizar(id, autorToken, {
             nome: novoNome.trim(),
           });
           const idx = state.receitas.findIndex((r) => r.id === id);
@@ -96,14 +79,7 @@ export const receitaView = {
           receitaView.render();
           showToast("Receita atualizada!");
         } catch (e) {
-          if (
-            e.message.toLowerCase().includes("inválido") ||
-            e.message.toLowerCase().includes("403")
-          ) {
-            delete codigos[id];
-          }
           showToast(e.message, "error");
-          receitaView.render();
         }
       });
     });
@@ -113,20 +89,19 @@ export const receitaView = {
         const id = Number(btn.dataset.id);
         const receita = state.receitas.find((r) => r.id === id);
         if (!confirm(`Remover "${receita?.nome}"?`)) return;
+        const autorToken = prompt(
+          "Digite o token do autor desta receita para confirmar a remoção:",
+        );
+        if (!autorToken || !autorToken.trim()) {
+          showToast("Remoção cancelada: token não informado.", "error");
+          return;
+        }
         try {
-          await receitaService.remover(id, codigos[id]);
-          delete codigos[id];
+          await receitaService.remover(id, autorToken);
           state.receitas = state.receitas.filter((r) => r.id !== id);
           receitaView.render();
           showToast("Receita removida!");
         } catch (e) {
-          if (
-            e.message.toLowerCase().includes("inválido") ||
-            e.message.toLowerCase().includes("403")
-          ) {
-            delete codigos[id];
-            receitaView.render();
-          }
           showToast(e.message, "error");
         }
       });
@@ -181,30 +156,39 @@ export const receitaView = {
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
+
+      const autorId = document.getElementById("rec-autor").value;
+      if (!autorId) {
+        showToast("Selecione o autor da receita.", "error");
+        return;
+      }
+
+      const autorToken = prompt(
+        "Digite o SEU token de autor para cadastrar esta receita em seu nome:",
+      );
+      if (!autorToken || !autorToken.trim()) {
+        showToast("Cadastro cancelado: token do autor não informado.", "error");
+        return;
+      }
+
       const dados = {
         nome: document.getElementById("rec-nome").value,
         modoPreparo: document.getElementById("rec-modo").value,
         tempoPreparo: document.getElementById("rec-tempo").value,
         porcoes: document.getElementById("rec-porcoes").value,
         categoriaId: document.getElementById("rec-categoria").value,
-        autorId: document.getElementById("rec-autor").value || null,
+        autorId,
+        autorToken,
         ingredientes: [...ingredientes],
       };
       try {
         const nova = await receitaService.criar(dados);
-        if (nova.codigoEdicao) {
-          codigos[nova.id] = nova.codigoEdicao;
-          showToast(
-            `Receita criada! Código de edição salvo em memória ✓`,
-            "success",
-          );
-        }
-        const { codigoEdicao, ...semCodigo } = nova;
-        state.receitas.push(semCodigo);
+        state.receitas.push(nova);
         receitaView.render();
         form.reset();
         ingredientes = [];
         renderIngredientes();
+        showToast("Receita criada com sucesso!", "success");
       } catch (e) {
         showToast(e.message, "error");
       }

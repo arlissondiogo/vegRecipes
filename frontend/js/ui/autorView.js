@@ -11,7 +11,7 @@ export const autorView = {
     if (state.autores.length === 0) {
       tbody.innerHTML = `
         <tr>
-          <td colspan="3" class="text-center text-muted fst-italic py-3">Nenhum autor cadastrado.</td>
+          <td colspan="2" class="text-center text-muted fst-italic py-3">Nenhum autor cadastrado.</td>
         </tr>`;
       return;
     }
@@ -20,7 +20,6 @@ export const autorView = {
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td>${a.nome}</td>
-        <td class="text-muted small">${a.email}</td>
         <td class="text-end">
           <button class="btn-del" data-id="${a.id}" title="Remover">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
@@ -35,9 +34,17 @@ export const autorView = {
     tbody.querySelectorAll(".btn-del").forEach((btn) => {
       btn.addEventListener("click", async () => {
         const id = Number(btn.dataset.id);
-        if (!confirm("Remover este autor?")) return;
+        if (!confirm("Remover este autor? Você precisará do token dele."))
+          return;
+        const token = prompt(
+          "Digite o token deste autor para confirmar a remoção:",
+        );
+        if (!token || !token.trim()) {
+          showToast("Remoção cancelada: token não informado.", "error");
+          return;
+        }
         try {
-          await autorService.remover(id);
+          await autorService.remover(id, token);
           state.autores = state.autores.filter((a) => a.id !== id);
           autorView.render();
           document.dispatchEvent(new CustomEvent("autores:updated"));
@@ -53,7 +60,7 @@ export const autorView = {
     const sel = document.getElementById(selectId);
     if (!sel) return;
     const val = sel.value;
-    sel.innerHTML = `<option value="">— Nenhum (opcional) —</option>`;
+    sel.innerHTML = `<option value="">— Selecione —</option>`;
     state.autores.forEach((a) => {
       const opt = document.createElement("option");
       opt.value = a.id;
@@ -69,15 +76,24 @@ export const autorView = {
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
       const nome = document.getElementById("autor-nome").value;
-      const email = document.getElementById("autor-email").value;
       try {
-        const novo = await autorService.criar({ nome, email });
-        state.autores.push(novo);
+        const novo = await autorService.criar({ nome });
+
+        alert(
+          "Conta criada!\n\n" +
+            `Apelido: ${novo.nome}\n` +
+            `Seu token (GUARDE BEM, ele NÃO será mostrado de novo):\n\n${novo.token}\n\n` +
+            "Esse token é o que comprova que as receitas são suas. Sem ele você não " +
+            "consegue criar, editar ou remover receitas em seu nome, e não há como recuperá-lo depois.",
+        );
+
+        const { token, ...semToken } = novo;
+        state.autores.push(semToken);
         autorView.render();
         document.dispatchEvent(new CustomEvent("autores:updated"));
         showToast(`Autor "${novo.nome}" cadastrado!`);
         form.reset();
-        if (onCreated) onCreated(novo);
+        if (onCreated) onCreated(semToken);
       } catch (e) {
         showToast(e.message, "error");
       }

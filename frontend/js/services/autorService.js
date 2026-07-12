@@ -6,13 +6,14 @@ export const autorService = {
   },
 
   async criar(dados) {
-    const { nome, email } = dados;
-    if (!nome || !nome.trim()) throw new Error('O campo "nome" é obrigatório.');
-    if (!email || !email.trim()) throw new Error('O campo "e-mail" é obrigatório.');
-    return api.post("/autores", { nome: nome.trim(), email: email.trim() });
+    const { nome } = dados;
+    if (!nome || !nome.trim()) throw new Error('O campo "apelido" é obrigatório.');
+    return api.post("/autores", { nome: nome.trim() });
   },
 
-  async remover(id) {
-    return api.delete(`/autores/${id}`);
+  async remover(id, token) {
+    if (!token || !token.trim())
+      throw new Error('O "token" é obrigatório para remover este autor.');
+    return api.delete(`/autores/${id}`, { token: token.trim() });
   },
 };

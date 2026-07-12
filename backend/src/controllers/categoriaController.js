@@ -1,31 +1,51 @@
 import { categoriaService } from "../services/categoriaService.js";
 
 export const categoriaController = {
-  listarTodas(req, res) {
-    const categorias = categoriaService.listarTodas();
-    res.json(categorias);
+  async listarTodas(req, res, next) {
+    try {
+      const categorias = categoriaService.listarTodas();
+      res.json(categorias);
+    } catch (e) {
+      next(e);
+    }
   },
 
-  buscarPorId(req, res) {
-    const categoria = categoriaService.buscarPorId(Number(req.params.id));
-    res.json(categoria);
+  async buscarPorId(req, res, next) {
+    try {
+      const categoria = categoriaService.buscarPorId(Number(req.params.id));
+      res.json(categoria);
+    } catch (e) {
+      next(e);
+    }
   },
 
-  criar(req, res) {
-    const nova = categoriaService.criar(req.body);
-    res.status(201).json(nova);
+  async criar(req, res, next) {
+    try {
+      const nova = categoriaService.criar(req.body);
+      res.status(201).json(nova);
+    } catch (e) {
+      next(e);
+    }
   },
 
-  atualizar(req, res) {
-    const atualizada = categoriaService.atualizar(
-      Number(req.params.id),
-      req.body,
-    );
-    res.json(atualizada);
+  async atualizar(req, res, next) {
+    try {
+      const atualizada = categoriaService.atualizar(
+        Number(req.params.id),
+        req.body,
+      );
+      res.json(atualizada);
+    } catch (e) {
+      next(e);
+    }
   },
 
-  remover(req, res) {
-    categoriaService.remover(Number(req.params.id));
-    res.status(204).end();
+  async remover(req, res, next) {
+    try {
+      categoriaService.remover(Number(req.params.id));
+      res.status(204).end();
+    } catch (e) {
+      next(e);
+    }
   },
 };

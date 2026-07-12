@@ -1,0 +1,236 @@
+@base = http://localhost:3000
+
+### ============================================================
+### CATEGORIAS
+### ============================================================
+
+### [1] Criar categoria
+POST {{base}}/categorias
+Content-Type: application/json
+
+{ "nome": "Proteína vegetal" }
+
+###
+
+### [2] Criar segunda categoria
+POST {{base}}/categorias
+Content-Type: application/json
+
+{ "nome": "Sobremesas" }
+
+###
+
+### [3] Listar todas as categorias
+GET {{base}}/categorias
+
+###
+
+### [4] Buscar categoria por ID
+GET {{base}}/categorias/1
+
+###
+
+### [5] Editar categoria
+PUT {{base}}/categorias/1
+Content-Type: application/json
+
+{ "nome": "Proteínas vegetais" }
+
+###
+
+### [6] Erro - categoria duplicada (409)
+POST {{base}}/categorias
+Content-Type: application/json
+
+{ "nome": "Sobremesas" }
+
+###
+
+### [7] Erro - nome vazio (400)
+POST {{base}}/categorias
+Content-Type: application/json
+
+{ "nome": "" }
+
+###
+
+### [8] Erro - remover categoria com receitas vinculadas (409)
+DELETE {{base}}/categorias/1
+
+###
+
+### ============================================================
+### AUTORES
+### ============================================================
+
+### [9] Criar autor (GUARDE o token da resposta!)
+POST {{base}}/autores
+Content-Type: application/json
+
+{ "nome": "Diogo" }
+
+###
+
+### [10] Listar todos os autores
+GET {{base}}/autores
+
+###
+
+### [11] Buscar autor por ID
+GET {{base}}/autores/1
+
+###
+
+### [12] Editar autor (substitua o token pelo que veio no POST)
+PUT {{base}}/autores/1
+Content-Type: application/json
+
+{ "token": "COLE-O-TOKEN-AQUI", "nome": "Diogo Silva" }
+
+###
+
+### [13] Erro - token inválido no PUT (403)
+PUT {{base}}/autores/1
+Content-Type: application/json
+
+{ "token": "token-errado", "nome": "Tentativa inválida" }
+
+###
+
+### [14] Erro - apelido com menos de 3 caracteres (400)
+POST {{base}}/autores
+Content-Type: application/json
+
+{ "nome": "Di" }
+
+###
+
+### [15] Erro - campo obrigatório faltando (400)
+POST {{base}}/autores
+Content-Type: application/json
+
+{}
+
+###
+
+### ============================================================
+### RECEITAS
+### ============================================================
+
+### [16] Criar receita (autorId e autorToken são obrigatórios)
+POST {{base}}/receitas
+Content-Type: application/json
+
+{
+  "nome": "PTS ao molho de tomate",
+  "modoPreparo": "Hidrate a PTS por 10 min, refogue com alho e cebola, adicione o molho e cozinhe por 15 min.",
+  "tempoPreparo": 30,
+  "porcoes": 4,
+  "categoriaId": 1,
+  "autorId": 1,
+  "autorToken": "COLE-O-TOKEN-AQUI",
+  "ingredientes": ["200 g de PTS", "2 tomates", "2 dentes de alho", "1 cebola", "azeite a gosto"]
+}
+
+###
+
+### [17] Listar receitas (sem filtros)
+GET {{base}}/receitas
+
+###
+
+### [18] Listar receitas com filtro por categoria, ordenadas por tempo de preparo
+GET {{base}}/receitas?categoriaId=1&ordenarPor=tempo_preparo&ordem=ASC
+
+###
+
+### [19] Listar receitas com paginação
+GET {{base}}/receitas?limit=5&offset=0
+
+###
+
+### [20] Buscar receita por ID
+GET {{base}}/receitas/1
+
+###
+
+### [21] Estatísticas das receitas
+GET {{base}}/receitas/estatisticas
+
+###
+
+### [22] Editar receita (substitua o autorToken pelo que veio no POST do autor)
+PUT {{base}}/receitas/1
+Content-Type: application/json
+
+{
+  "autorToken": "COLE-O-TOKEN-AQUI",
+  "nome": "PTS ao molho apimentado",
+  "tempoPreparo": 25
+}
+
+###
+
+### [23] Deletar receita (substitua o autorToken pelo que veio no POST do autor)
+DELETE {{base}}/receitas/1
+Content-Type: application/json
+
+{ "autorToken": "COLE-O-TOKEN-AQUI" }
+
+###
+
+### [24] Erro - token inválido no PUT (403)
+PUT {{base}}/receitas/2
+Content-Type: application/json
+
+{
+  "autorToken": "token-errado",
+  "nome": "Tentativa inválida"
+}
+
+###
+
+### [25] Erro - token inválido no DELETE (403)
+DELETE {{base}}/receitas/2
+Content-Type: application/json
+
+{ "autorToken": "token-errado" }
+
+###
+
+### [26] Erro - autorToken ausente (400)
+POST {{base}}/receitas
+Content-Type: application/json
+
+{
+  "nome": "Receita sem token",
+  "modoPreparo": "...",
+  "tempoPreparo": 10,
+  "porcoes": 2,
+  "categoriaId": 1,
+  "autorId": 1
+}
+
+###
+
+### [27] Erro - categoriaId inexistente (422)
+POST {{base}}/receitas
+Content-Type: application/json
+
+{
+  "nome": "Receita inválida",
+  "modoPreparo": "...",
+  "tempoPreparo": 10,
+  "porcoes": 2,
+  "categoriaId": 999,
+  "autorId": 1,
+  "autorToken": "COLE-O-TOKEN-AQUI"
+}
+
+###
+
+### [28] Erro - campo obrigatório faltando (400)
+POST {{base}}/receitas
+Content-Type: application/json
+
+{ "nome": "Só o nome" }

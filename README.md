@@ -6,7 +6,7 @@
 
 ## Sobre o Projeto
 
-Sistema web para registro e consulta de receitas vegetarianas. O usuário pode cadastrar receitas com ingredientes e categorias. O backend foi desenvolvido com Node.js e Express.js em arquitetura em camadas. O frontend consome a API via `fetch` com HTML5 e Bootstrap 5.
+Sistema web para registro e consulta de receitas vegetarianas. O usuário pode cadastrar receitas com ingredientes, categoria e autor. O backend foi desenvolvido com Node.js e Express.js em arquitetura em camadas, com persistência em SQLite. O frontend consome a API via `fetch` com HTML5 e Bootstrap 5.
 
 ---
 
@@ -16,7 +16,7 @@ Sistema web para registro e consulta de receitas vegetarianas. O usuário pode c
 | ------------- | --------------------------------------- |
 | Frontend      | HTML5 + CSS3 + Bootstrap 5 + Vanilla.js |
 | Backend       | Node.js + Express.js                    |
-| Persistência  | In-memory (futuramente MongoDB)         |
+| Persistência  | SQLite (`node:sqlite`)                  |
 | Versionamento | Git + GitHub                            |
 
 ---
@@ -24,6 +24,9 @@ Sistema web para registro e consulta de receitas vegetarianas. O usuário pode c
 ## Como Executar
 
 ```bash
+# Entrar na pasta do backend
+cd backend
+
 # Instalar dependências
 npm install
 
@@ -34,6 +37,8 @@ npm run dev
 npm start
 ```
 
+> O banco SQLite (`banco.db`) é criado automaticamente na pasta `backend/` na primeira execução, junto com as tabelas e uma seed inicial de categorias.
+
 ---
 
 ## Estrutura de Pastas
@@ -41,9 +46,12 @@ npm start
 ```
 backend/
 ├── assets/                             # prints com requisições e lista de requisições no arquivo .http
+├── banco.db                             # arquivo SQLite gerado na primeira execução
 ├── src/
 │   ├── app.js                          # setup + middleware + rotas
 │   ├── server.js                       # listen()
+│   ├── db.js                           # conexão SQLite + criação das tabelas
+│   ├── seed.js                         # popula categorias iniciais se o banco estiver vazio
 │   ├── routes/
 │   │   ├── receitas.js                 # path → controller
 │   │   ├── categorias.js
@@ -57,7 +65,7 @@ backend/
 │   │   ├── categoriaService.js
 │   │   └── autorService.js
 │   ├── models/
-│   │   ├── receita.js                  # estrutura de dados + repositório in-memory
+│   │   ├── receita.js                  # queries SQL + montagem do objeto de resposta
 │   │   ├── categoria.js
 │   │   └── autor.js
 │   └── middleware/
@@ -105,47 +113,49 @@ frontend/
 
 ```
 id: number
-codigoEdicao: string   // UUID gerado no POST; necessário para editar ou deletar
 nome: string
 modoPreparo: string
 tempoPreparo: number   // em minutos
 porcoes: number
 categoriaId: number
-autorId: number | null // opcional
+autorId: number         // obrigatório; exige autorToken válido na criação/edição/remoção
 ingredientes: Ingrediente[]
+createdAt: string
+updatedAt: string
 ```
 
-> `codigoEdicao` é retornado **apenas** na resposta do `POST /receitas`. Não aparece em listagens nem em buscas por ID. Quem não guardar o código não poderá editar ou deletar a receita.
+> Toda receita precisa de um autor. Para criar, editar ou remover uma receita é necessário enviar o `autorToken` do autor correspondente (veja a seção [Token de Autor](#token-de-autor)).
 
 **Ingrediente**
 
 ```
-id: number
-nome: string
-quantidade: number
-unidade: string   // ex: gramas, xícaras, colheres
+descricao: string   // ex: "200 g de PTS", "2 colheres de azeite"
 ```
 
-> Composição com `Receita` — ingrediente não existe sem a receita. Se a receita for deletada, seus ingredientes também são.
+> Composição com `Receita` — ingrediente não existe sem a receita. Se a receita for deletada, seus ingredientes também são (via `ON DELETE CASCADE` no banco). Atualmente cada ingrediente é uma única string livre (quantidade + unidade + nome combinados), e não um objeto estruturado.
 
 **Categoria**
 
 ```
 id: number
-nome: string   // ex: Lanches, Sobremesas, Almoços, Bebidas
+nome: string   // ex: Entrada, Prato Principal, Sobremesa, Lanche
+createdAt: string
+updatedAt: string
 ```
 
-> Agregação — categorias existem de forma independente e podem estar sem receitas associadas.
+> Agregação — categorias existem de forma independente e podem estar sem receitas associadas. Nomes duplicados (case-insensitive) são rejeitados com `409 Conflict`. Não é possível remover uma categoria com receitas vinculadas (`409 Conflict`).
 
 **Autor**
 
 ```
 id: number
-nome: string
-email: string
+nome: string    // funciona como um apelido
+token: string   // gerado no POST; necessário para criar receitas em seu nome e para editar/remover suas receitas ou a si mesmo
+createdAt: string
+updatedAt: string
 ```
 
-> Associação com `Receita` — Receita referencia o autor pelo `autorId`, mas nenhum dos dois possui o outro. Autor existe independentemente e pode não ter receitas; Receita pode existir sem um autor cadastrado (`autorId` é opcional).
+> Associação com `Receita` — Receita referencia o autor pelo `autorId`, mas nenhum dos dois possui o outro. Diferente do restante do domínio, Autor não tem mais `email`: o cadastro é feito só com um apelido. O `token` é retornado **apenas** na resposta do `POST /autores` — não aparece em listagens nem em buscas por ID. Quem não guardar o token não conseguirá cadastrar receitas em nome desse autor, nem editar/remover suas receitas, nem editar/remover o próprio autor.
 
 ---
 
@@ -164,7 +174,6 @@ graph LR
 classDiagram
     class Receita {
         +number id
-        +string codigoEdicao
         +string nome
         +string modoPreparo
         +number tempoPreparo
@@ -172,24 +181,27 @@ classDiagram
         +number categoriaId
         +number autorId
         +Ingrediente[] ingredientes
+        +string createdAt
+        +string updatedAt
     }
 
     class Ingrediente {
-        +number id
-        +string nome
-        +number quantidade
-        +string unidade
+        +string descricao
     }
 
     class Categoria {
         +number id
         +string nome
+        +string createdAt
+        +string updatedAt
     }
 
     class Autor {
         +number id
         +string nome
-        +string email
+        +string token
+        +string createdAt
+        +string updatedAt
     }
 
     Receita *-- Ingrediente : composição
@@ -205,22 +217,24 @@ classDiagram
 
 Cada arquivo tem uma única razão para mudar:
 
-| Arquivo                              | Responsabilidade                                                   |
-| ------------------------------------ | ------------------------------------------------------------------ |
-| `models/receita.js`                  | Estrutura de dados e acesso ao repositório in-memory de receitas   |
-| `models/categoria.js`                | Estrutura de dados e acesso ao repositório in-memory de categorias |
-| `models/autor.js`                    | Estrutura de dados e acesso ao repositório in-memory de autores    |
-| `services/receitaService.js`         | Regras de negócio de receitas                                      |
-| `services/categoriaService.js`       | Regras de negócio de categorias                                    |
-| `services/autorService.js`           | Regras de negócio de autores                                       |
-| `controllers/receitaController.js`   | Interface HTTP de receitas                                         |
-| `controllers/categoriaController.js` | Interface HTTP de categorias                                       |
-| `controllers/autorController.js`     | Interface HTTP de autores                                          |
-| `routes/receitas.js`                 | Mapeamento de URLs para controllers de receitas                    |
-| `routes/categorias.js`               | Mapeamento de URLs para controllers de categorias                  |
-| `routes/autores.js`                  | Mapeamento de URLs para controllers de autores                     |
-| `middleware/logger.js`               | Log de requisições                                                 |
-| `middleware/errorHandler.js`         | Tratamento centralizado de erros                                   |
+| Arquivo                              | Responsabilidade                                           |
+| ------------------------------------ | ---------------------------------------------------------- |
+| `db.js`                              | Conexão com o SQLite e criação das tabelas                 |
+| `seed.js`                            | Popula categorias iniciais se o banco estiver vazio        |
+| `models/receita.js`                  | Queries SQL e montagem do objeto de resposta de receitas   |
+| `models/categoria.js`                | Queries SQL e montagem do objeto de resposta de categorias |
+| `models/autor.js`                    | Queries SQL e montagem do objeto de resposta de autores    |
+| `services/receitaService.js`         | Regras de negócio de receitas                              |
+| `services/categoriaService.js`       | Regras de negócio de categorias                            |
+| `services/autorService.js`           | Regras de negócio de autores                               |
+| `controllers/receitaController.js`   | Interface HTTP de receitas                                 |
+| `controllers/categoriaController.js` | Interface HTTP de categorias                               |
+| `controllers/autorController.js`     | Interface HTTP de autores                                  |
+| `routes/receitas.js`                 | Mapeamento de URLs para controllers de receitas            |
+| `routes/categorias.js`               | Mapeamento de URLs para controllers de categorias          |
+| `routes/autores.js`                  | Mapeamento de URLs para controllers de autores             |
+| `middleware/logger.js`               | Log de requisições                                         |
+| `middleware/errorHandler.js`         | Tratamento centralizado de erros                           |
 
 ---
 
@@ -238,10 +252,10 @@ Request HTTP
   Controller   →  lê req.body, chama receitaService.criar(dados)
     │
     ▼
-  Service      →  valida (nome? categoria existe?), chama receitaModel.inserir(dados)
+  Service      →  valida (nome? categoria existe? autorToken válido?), chama receitaModel.inserir(dados)
     │
     ▼
-  Model        →  insere no array, gera codigoEdicao, retorna o objeto criado
+  Model        →  insere a receita e os ingredientes no SQLite, retorna o objeto criado
     │
     ▼
   Controller   →  recebe o resultado, faz res.status(201).json(resultado)
@@ -263,69 +277,86 @@ Response HTTP
 
 ### Receitas
 
-| Método | Rota            | Ação                     | Status de Retorno                                                        |
-| ------ | --------------- | ------------------------ | ------------------------------------------------------------------------ |
-| GET    | `/receitas`     | Lista todas as receitas  | `200 OK`                                                                 |
-| GET    | `/receitas/:id` | Busca uma receita por ID | `200 OK` / `404 Not Found`                                               |
-| POST   | `/receitas`     | Cria uma nova receita    | `201 Created` / `400 Bad Request` / `422 Unprocessable`                  |
-| PUT    | `/receitas/:id` | Atualiza uma receita     | `200 OK` / `400 Bad Request` / `403 Forbidden` / `404 Not Found`         |
-| DELETE | `/receitas/:id` | Remove uma receita       | `204 No Content` / `400 Bad Request` / `403 Forbidden` / `404 Not Found` |
+| Método | Rota                     | Ação                                                                       | Status de Retorno                                                                      |
+| ------ | ------------------------ | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| GET    | `/receitas`              | Lista receitas (com filtros e paginação)                                   | `200 OK`                                                                               |
+| GET    | `/receitas/estatisticas` | Retorna total de receitas, contagem por categoria e tempo médio de preparo | `200 OK`                                                                               |
+| GET    | `/receitas/:id`          | Busca uma receita por ID                                                   | `200 OK` / `404 Not Found`                                                             |
+| POST   | `/receitas`              | Cria uma nova receita (requer `autorToken`)                                | `201 Created` / `400 Bad Request` / `403 Forbidden` / `422 Unprocessable`              |
+| PUT    | `/receitas/:id`          | Atualiza uma receita (requer `autorToken`)                                 | `200 OK` / `400 Bad Request` / `403 Forbidden` / `404 Not Found` / `422 Unprocessable` |
+| DELETE | `/receitas/:id`          | Remove uma receita (requer `autorToken`)                                   | `204 No Content` / `400 Bad Request` / `403 Forbidden` / `404 Not Found`               |
+
+> `GET /receitas` aceita os parâmetros de query `nome`, `categoriaId`, `ordenarPor` (`nome`, `tempo_preparo`, `created_at` ou `id`), `ordem` (`ASC`/`DESC`), `limit` e `offset`. A resposta tem o formato `{ dados: [...], paginacao: { total, limit, offset, paginas } }`.
 
 ### Categorias
 
-| Método | Rota              | Ação                       | Status de Retorno                  |
-| ------ | ----------------- | -------------------------- | ---------------------------------- |
-| GET    | `/categorias`     | Lista todas as categorias  | `200 OK`                           |
-| GET    | `/categorias/:id` | Busca uma categoria por ID | `200 OK` / `404 Not Found`         |
-| POST   | `/categorias`     | Cria uma nova categoria    | `201 Created` / `400 Bad Request`  |
-| PUT    | `/categorias/:id` | Atualiza uma categoria     | `200 OK` / `404 Not Found`         |
-| DELETE | `/categorias/:id` | Remove uma categoria       | `204 No Content` / `404 Not Found` |
+| Método | Rota              | Ação                       | Status de Retorno                                               |
+| ------ | ----------------- | -------------------------- | --------------------------------------------------------------- |
+| GET    | `/categorias`     | Lista todas as categorias  | `200 OK`                                                        |
+| GET    | `/categorias/:id` | Busca uma categoria por ID | `200 OK` / `404 Not Found`                                      |
+| POST   | `/categorias`     | Cria uma nova categoria    | `201 Created` / `400 Bad Request` / `409 Conflict`              |
+| PUT    | `/categorias/:id` | Atualiza uma categoria     | `200 OK` / `400 Bad Request` / `404 Not Found` / `409 Conflict` |
+| DELETE | `/categorias/:id` | Remove uma categoria       | `204 No Content` / `404 Not Found` / `409 Conflict`             |
+
+> Nome duplicado (case-insensitive) ou remoção de categoria com receitas vinculadas retornam `409 Conflict`.
 
 ### Autores
 
-| Método | Rota           | Ação                   | Status de Retorno                  |
-| ------ | -------------- | ---------------------- | ---------------------------------- |
-| GET    | `/autores`     | Lista todos os autores | `200 OK`                           |
-| GET    | `/autores/:id` | Busca um autor por ID  | `200 OK` / `404 Not Found`         |
-| POST   | `/autores`     | Cria um novo autor     | `201 Created` / `400 Bad Request`  |
-| PUT    | `/autores/:id` | Atualiza um autor      | `200 OK` / `404 Not Found`         |
-| DELETE | `/autores/:id` | Remove um autor        | `204 No Content` / `404 Not Found` |
+| Método | Rota           | Ação                                   | Status de Retorno                                                                         |
+| ------ | -------------- | -------------------------------------- | ----------------------------------------------------------------------------------------- |
+| GET    | `/autores`     | Lista todos os autores                 | `200 OK`                                                                                  |
+| GET    | `/autores/:id` | Busca um autor por ID                  | `200 OK` / `404 Not Found`                                                                |
+| POST   | `/autores`     | Cria um novo autor (retorna o `token`) | `201 Created` / `400 Bad Request`                                                         |
+| PUT    | `/autores/:id` | Atualiza um autor (requer `token`)     | `200 OK` / `400 Bad Request` / `403 Forbidden` / `404 Not Found`                          |
+| DELETE | `/autores/:id` | Remove um autor (requer `token`)       | `204 No Content` / `400 Bad Request` / `403 Forbidden` / `404 Not Found` / `409 Conflict` |
+
+> Remover um autor que possui receitas vinculadas retorna `409 Conflict`.
 
 ---
 
-## Código de Edição
+## Token de Autor
 
-Receitas usam um sistema de **código de edição** no lugar de autenticação. Qualquer pessoa pode criar uma receita — ao fazer isso, recebe um `codigoEdicao` (UUID) na resposta. Esse código é necessário para editar ou deletar a receita depois.
+A API usa um sistema de **token por autor** no lugar de autenticação tradicional. Para publicar receitas é preciso primeiro existir como autor: ao criar um autor (`POST /autores`), a resposta traz um `token` que funciona como "senha" desse autor. Esse token é necessário para:
+
+- Criar uma receita em nome desse autor (`autorToken` no `POST /receitas`)
+- Editar ou remover uma receita desse autor (`autorToken` no `PUT`/`DELETE /receitas/:id`)
+- Editar ou remover o próprio autor (`token` no `PUT`/`DELETE /autores/:id`)
 
 **Fluxo:**
 
 ```
-POST /receitas  →  { ...receita, codigoEdicao: "uuid-gerado" }  ← guarde este código!
+POST /autores
+{ "nome": "Diogo" }
+→ { id: 1, nome: "Diogo", token: "A1B2C3D4", ... }   ← guarde este token!
+
+POST /receitas
+{ "nome": "PTS ao molho", ..., "autorId": 1, "autorToken": "A1B2C3D4" }
 
 PUT /receitas/1
-{ "codigoEdicao": "uuid-gerado", "nome": "novo nome" }
+{ "autorToken": "A1B2C3D4", "nome": "novo nome" }
 
 DELETE /receitas/1
-{ "codigoEdicao": "uuid-gerado" }
+{ "autorToken": "A1B2C3D4" }
 ```
 
 **Comportamento:**
 
-- `codigoEdicao` aparece **apenas** na resposta do `POST`
-- GET `/receitas` e GET `/receitas/:id` **não expõem** o código
-- Código errado ou ausente retorna `403 Forbidden`
-- Como os dados são in-memory, os códigos são perdidos ao reiniciar o servidor
+- `token` aparece **apenas** na resposta do `POST /autores`
+- GET `/autores` e GET `/autores/:id` **não expõem** o token
+- Token errado ou ausente retorna `403 Forbidden` (ou `400 Bad Request` se nem foi enviado)
+- `autorId` é obrigatório em toda receita — não é possível cadastrar uma receita sem autor
+- Como os dados ficam no SQLite, os tokens **persistem** entre reinicializações do servidor (diferente da versão anterior, in-memory)
 
 ---
 
 ## Operações CRUD
 
-| Operação | Descrição                                      |
-| -------- | ---------------------------------------------- |
-| Create   | Cadastrar uma nova receita                     |
-| Read     | Listar todas as receitas / buscar uma por ID   |
-| Update   | Editar os dados de uma receita (requer código) |
-| Delete   | Remover uma receita (requer código)            |
+| Operação | Descrição                                                   |
+| -------- | ----------------------------------------------------------- |
+| Create   | Cadastrar uma nova receita (requer `autorToken`)            |
+| Read     | Listar receitas com filtros e paginação / buscar uma por ID |
+| Update   | Editar os dados de uma receita (requer `autorToken`)        |
+| Delete   | Remover uma receita (requer `autorToken`)                   |
 
 ---
 
@@ -337,20 +368,25 @@ Os endpoints podem ser testados com **Thunder Client** (extensão do VS Code) ou
 # Listar todas as receitas
 curl http://localhost:3000/receitas
 
-# Criar uma receita (guarde o codigoEdicao da resposta!)
+# Criar um autor (guarde o token da resposta!)
+curl -X POST http://localhost:3000/autores \
+  -H "Content-Type: application/json" \
+  -d '{"nome": "Diogo"}'
+
+# Criar uma receita (autorId e autorToken são obrigatórios)
 curl -X POST http://localhost:3000/receitas \
   -H "Content-Type: application/json" \
-  -d '{"nome": "PTS ao molho", "modoPreparo": "...", "tempoPreparo": 30, "porcoes": 4, "categoriaId": 1}'
+  -d '{"nome": "PTS ao molho", "modoPreparo": "...", "tempoPreparo": 30, "porcoes": 4, "categoriaId": 1, "autorId": 1, "autorToken": "token-gerado"}'
 
 # Atualizar uma receita
 curl -X PUT http://localhost:3000/receitas/1 \
   -H "Content-Type: application/json" \
-  -d '{"codigoEdicao": "uuid-gerado", "nome": "PTS ao molho apimentado"}'
+  -d '{"autorToken": "token-gerado", "nome": "PTS ao molho apimentado"}'
 
 # Deletar uma receita
 curl -X DELETE http://localhost:3000/receitas/1 \
   -H "Content-Type: application/json" \
-  -d '{"codigoEdicao": "uuid-gerado"}'
+  -d '{"autorToken": "token-gerado"}'
 ```
 
 ---
@@ -360,7 +396,7 @@ curl -X DELETE http://localhost:3000/receitas/1 \
 ```
 main           ← produção
   └── develop  ← integração
-       └── feature/modelagem  ← branch atual
+       └── feature/banco-de-dados ← branch atual
 ```
 
 **Fluxo adotado:**
